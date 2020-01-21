@@ -27,14 +27,15 @@ def main(args):
 
     print(container)
 
-    for label_id in container.label_ids[:3]:
+    mean_purity = 0.0
+
+    for label_id in container.label_ids:
         same_class_inst_ids = container.get_instance_ids_by_label_ids(label_id)
         same_class_embeddings = container.get_embedding_by_instance_ids(same_class_inst_ids)
         num_inst_same_class = len(same_class_inst_ids)
         retrieved_indexes, similarities = agent.search(
             same_class_embeddings, top_k = 2 * num_inst_same_class, is_similarity=True)
 
-        # TODO: problematic
         retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
 
         # top k purity
@@ -51,6 +52,10 @@ def main(args):
 
         # if first_neg > last_pos (purity == 1.0) => compute margin
         # otherwise, count how many different classes within.
+
+        mean_purity += same_class_purity
+    print('Puirty: {}'.format(mean_purity / len(container.label_ids)))
+        
 
 if __name__ == '__main__':
     import argparse
