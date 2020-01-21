@@ -900,53 +900,6 @@ class EmbeddingContainer(object):
                      filename=filename)
         self.createIndex(recreate=True)
 
-    # TODO: Remove
-    def _from_cradle_internals(self, embeddings, meta_dict):
-
-        probabilities = None
-        if container_fields.probabilities in meta_dict:
-            probabilities = meta_dict[container_fields.probabilities]
-
-        assert container_fields.label_ids in meta_dict, 'Label ids must be provided in meta_dict'
-
-        extra_keys = [k for k in meta_dict.keys()
-                      if k not in [container_fields.label_names,
-                                   container_fields.instance_ids,
-                                   container_fields.label_ids,
-                                   container_fields.filename_strings]]
-
-        if container_fields.instance_ids in meta_dict:
-            instance_ids = np.squeeze(meta_dict[container_fields.instance_ids])
-        else:
-            # Use pseudo instance ids instead
-            instance_ids = np.arange(embeddings.shape[0])
-        label_ids = np.squeeze(meta_dict[container_fields.label_ids])
-        filename_strings, label_names = None, None
-
-        if container_fields.label_names in meta_dict:
-            label_names = np.squeeze(meta_dict[container_fields.label_names])
-
-        if container_fields.filename_strings in meta_dict:
-            filename_strings = np.squeeze(meta_dict[container_fields.filename_strings])
-
-        attributes = []
-        for idx in range(len(instance_ids)):
-            attr_dict = {}
-            for k in extra_keys:
-                attr_dict[k] = meta_dict[k][idx][0]
-            attributes.append(attr_dict)
-        if not attributes:
-            attributes = None
-
-        self._from_np_array(
-            instance_ids,
-            embeddings,
-            label_ids,
-            filename_strings,
-            label_names,
-            attributes,
-            probabilities)
-
     def load(self, path):
         """
           Args:
@@ -1014,38 +967,6 @@ class EmbeddingContainer(object):
 
         print('Container initialized.')
 
-    #TODO: Remove
-    def load_pkl(self, pkl_path):
-        """Load embeddings & internals from cradle EmbeddingDB format
-          NOTE: This function would not verify md5 hash code.
-          Args:
-            pkl_path: A string, path to the pickle file
-        """
-        self._load_pkl(pkl_path)
-
-    def _load_pkl(self, pkl_path):
-        with open(pkl_path, 'rb') as pkl_file:
-            db_data = pickle.load(pkl_file)
-
-        embeddings = None
-        if container_fields.embeddings not in db_data:
-            raise KeyError('missing {required} in {db_keys}'.format(
-                required=container_fields.embeddings,
-                db_keys=list(db_data.keys())))
-        embeddings = db_data[container_fields.embeddings]
-        if not isinstance(embeddings, (np.ndarray, np.generic)):
-            embeddings = np.asarray(embeddings, np.float32)
-        assert len(embeddings.shape) == 2, 'Embeddings should be 2D np array'
-
-        meta_dict = None
-        if container_fields.meta in db_data:
-            meta_dict = db_data[container_fields.meta]
-        assert meta_dict is not None, '{} contains no meta data'.format(pkl_path)
-
-        self._from_cradle_internals(embeddings, meta_dict)
-
-        print('Container initialized from pickle file.')
-
     def get_instance_id_by_attribute_value(self, attr_value):
         """
           Args:
@@ -1057,10 +978,6 @@ class EmbeddingContainer(object):
         if attr_value in self._instance_by_attribute_value:
             return self._instance_by_attribute_value[attr_value]
         return []
-
-    # TODO: Remove
-    def get_instance_id_by_attribute_value_2(self, attr_value):
-        pass
 
     def get_attribute_by_instance_ids(self, instance_ids):
         """
