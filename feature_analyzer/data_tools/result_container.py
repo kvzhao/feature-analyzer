@@ -9,8 +9,22 @@ sys.path.insert(0, os.path.abspath(
 
 import pandas as pd
 
+import feature_analyzer.data_tools.dftools as dftools
+
+
 
 class ResultContainer(object):
+
+    def __init__(self):
+        pass
+
+
+    def add(self):
+        pass
+
+
+
+class LegacyResultContainer(object):
     """
       The evaluation result container handles the computation outcomes
       and save them into pandas.DataFrame.
