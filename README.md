@@ -1,5 +1,10 @@
 # Feature Analyzer
 
+## Development Branch
+TODO
+- intra-class and inter-class analysis
+- cross model or cross temperal analysis
+
 ## Quick Start
 
 ### Installation
