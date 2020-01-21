@@ -5,6 +5,9 @@ import sys
 import json
 from os.path import join, basename, dirname
 
+import numpy as np
+import pandas as pd
+
 from feature_analyzer.index.agent import IndexAgent
 from feature_analyzer.data_tools.embedding_container import EmbeddingContainer
 
@@ -24,13 +27,30 @@ def main(args):
 
     print(container)
 
-    for label_id in container.label_ids:
+    for label_id in container.label_ids[:3]:
         same_class_inst_ids = container.get_instance_ids_by_label_ids(label_id)
         same_class_embeddings = container.get_embedding_by_instance_ids(same_class_inst_ids)
         num_inst_same_class = len(same_class_inst_ids)
         retrieved_indexes, similarities = agent.search(
-            same_class_embeddings, top_k=2*num_inst_same_class, is_similarity=True)
-        break
+            same_class_embeddings, top_k = 2 * num_inst_same_class, is_similarity=True)
+
+        # TODO: problematic
+        retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
+
+        # top k purity
+        hits = np.isin(retrieved_indexes[:, :num_inst_same_class], same_class_inst_ids)
+        hit_count_each_inst = np.sum(hits, axis=1)
+        purity_each_inst = hit_count_each_inst / num_inst_same_class
+        same_class_purity = np.mean(purity_each_inst)
+
+        # last positive, first negative
+        hit_label_ids = retrieved_label_ids == np.asarray([label_id])
+        positive_ids = np.where(hit_label_ids)
+        negative_ids = np.where(~hit_label_ids)
+        first_negative_ids = np.argmin(hit_label_ids, axis=1)
+
+        # if first_neg > last_pos (purity == 1.0) => compute margin
+        # otherwise, count how many different classes within.
 
 if __name__ == '__main__':
     import argparse
