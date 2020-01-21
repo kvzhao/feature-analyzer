@@ -6,7 +6,7 @@
         EmbeddingContainer:
             Efficient object which handles the shared (globally) embedding vectors.
 
-    @bird, dennis, kv, lotus
+    TODO: Interface get list return list; get numpy array return numpy array
 """
 import os
 import sys
@@ -402,7 +402,12 @@ class EmbeddingContainer(object):
         elif isinstance(instance_ids, int):
             return self._label_by_instance_id[instance_ids]
         elif isinstance(instance_ids, (np.ndarray, np.generic)):
-            return [self._label_by_instance_id[img_id] for img_id in instance_ids.tolist()]
+            dim = len(instance_ids.shape)
+            if dim == 1:
+                return np.asarray([self._label_by_instance_id[img_id] for img_id in instance_ids.tolist()])
+            elif dim == 2:
+                return np.asarray([[self._label_by_instance_id[img_id] for img_id in row_img_id]
+                    for row_img_id in instance_ids.tolist()])
         else:
             raise TypeError('instance_ids should be int, list or array.')
 
@@ -895,6 +900,7 @@ class EmbeddingContainer(object):
                      filename=filename)
         self.createIndex(recreate=True)
 
+    # TODO: Remove
     def _from_cradle_internals(self, embeddings, meta_dict):
 
         probabilities = None
@@ -1008,6 +1014,7 @@ class EmbeddingContainer(object):
 
         print('Container initialized.')
 
+    #TODO: Remove
     def load_pkl(self, pkl_path):
         """Load embeddings & internals from cradle EmbeddingDB format
           NOTE: This function would not verify md5 hash code.
@@ -1051,6 +1058,7 @@ class EmbeddingContainer(object):
             return self._instance_by_attribute_value[attr_value]
         return []
 
+    # TODO: Remove
     def get_instance_id_by_attribute_value_2(self, attr_value):
         pass
 
