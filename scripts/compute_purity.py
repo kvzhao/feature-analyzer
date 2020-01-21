@@ -5,8 +5,8 @@ import sys
 import json
 from os.path import join, basename, dirname
 
-from metric_learning_evaluator.index.agent import IndexAgent
-from metric_learning_evaluator.data_tools.embedding_container import EmbeddingContainer
+from feature_analyzer.index.agent import IndexAgent
+from feature_analyzer.data_tools.embedding_container import EmbeddingContainer
 
 
 def main(args):

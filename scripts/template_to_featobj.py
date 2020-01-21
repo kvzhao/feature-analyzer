@@ -8,8 +8,8 @@ from os.path import join, basename, dirname
 import numpy as np
 import pandas as pd
 
-from metric_learning_evaluator.data_tools.embedding_container import EmbeddingContainer
-import metric_learning_evaluator.data_tools.dftools as dftools
+from feature_analyzer.data_tools.embedding_container import EmbeddingContainer
+import feature_analyzer.data_tools.dftools as dftools
 
 
 def get_binary_files(path):
