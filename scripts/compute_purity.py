@@ -20,7 +20,6 @@ def main(args):
     container = EmbeddingContainer()
     container.load(args.data_dir)
 
-    all_embeddings = container.embeddings
     instance_ids = container.instance_ids
     all_embeddings = container.get_embedding_by_instance_ids(instance_ids)
     agent = IndexAgent('HNSW', instance_ids, all_embeddings, distance_measure='ip')
@@ -28,6 +27,7 @@ def main(args):
     print(container)
 
     mean_purity = 0.0
+    impurity_counts = 0.0
 
     for label_id in container.label_ids:
         same_class_inst_ids = container.get_instance_ids_by_label_ids(label_id)
@@ -50,8 +50,12 @@ def main(args):
         negative_ids = np.where(~hit_label_ids)
         first_negative_ids = np.argmin(hit_label_ids, axis=1)
 
+        print(np.sum(purity_each_inst != 1.0))
+
         # if first_neg > last_pos (purity == 1.0) => compute margin
         # otherwise, count how many different classes within.
+
+        break
 
         mean_purity += same_class_purity
     print('Puirty: {}'.format(mean_purity / len(container.label_ids)))
