@@ -50,8 +50,6 @@ def main(args):
         negative_ids = np.where(~hit_label_ids)
         first_negative_ids = np.argmin(hit_label_ids, axis=1)
 
-        print(np.sum(purity_each_inst != 1.0))
-
         # if first_neg > last_pos (purity == 1.0) => compute margin
         # otherwise, count how many different classes within.
 
