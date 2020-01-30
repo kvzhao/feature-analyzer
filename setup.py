@@ -22,6 +22,7 @@ install_requires = [
     'sklearn',
     'pandas',
     'pytablewriter',
+    'MulticoreTSNE',
 ]
 
 eval_setup_info = dict(
