@@ -74,6 +74,5 @@ class TSNE(object):
                        alpha=0.3,
                        edgecolors='none')
         ax.axis('off')
-        ax.legend(self._label_names, numpoints=1, fancybox=True, shadow=True,
-                  loc='best')
+        #ax.legend(self._label_names, numpoints=1, fancybox=True, shadow=True, loc='best')
         fig.savefig(figure_path)
