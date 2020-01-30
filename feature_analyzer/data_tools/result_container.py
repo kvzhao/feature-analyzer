@@ -7,24 +7,40 @@ import sys
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..')))
 
+from os.path import join
+
 import pandas as pd
 
 import feature_analyzer.data_tools.dftools as dftools
 
 
 
-class ResultContainer(object):
+class EventContainer(object):
 
     def __init__(self):
-        pass
+        self._event_buffer = pd.DataFrame()
+
+    def add(self, content):
+        self._event_buffer = self._event_buffer.append(content, ignore_index=True)
 
 
-    def add(self):
-        pass
+    @property
+    def events(self):
+        return self._event_buffer
+
+    @events.setter
+    def events(self, events):
+        self._event_buffer = pd.DataFrame(events)
 
 
+    def save(self, path):
+        dftools.save(self._event_buffer, path)
 
-class LegacyResultContainer(object):
+    def load(self, path):
+        self._event_buffer = dftools.load(path)
+
+
+class ResultContainer(object):
     """
       The evaluation result container handles the computation outcomes
       and save them into pandas.DataFrame.
@@ -76,14 +92,18 @@ class LegacyResultContainer(object):
     def save(self, path):
         """Save result and events to disk"""
         os.makedirs(path, exist_ok=True)
-        self._results.to_pickle(os.path.join(path, 'results.pickle'))
-        self._event_buffer.to_pickle(os.path.join(path, 'events.pickle'))
+        #self._results.to_pickle(os.path.join(path, 'results.pickle'))
+        #self._event_buffer.to_pickle(os.path.join(path, 'events.pickle'))
+        dftools.save(self._event_buffer, join(path, 'events.h5'))
+        dftools.save(self._results, join(path, 'results.h5'))
         print('Save results and events into \'{}\''.format(path))
 
     def load(self, path):
         """load result and events from disk"""
-        self._results = pd.read_pickle(os.path.join(path, 'results.pickle'))
-        self._event_buffer = pd.read_pickle(os.path.join(path, 'events.pickle'))
+        #self._results = pd.read_pickle(os.path.join(path, 'results.pickle'))
+        #self._event_buffer = pd.read_pickle(os.path.join(path, 'events.pickle'))
+        self._event_buffer = dftools.load(join(path, 'events.h5'))
+        self._results = dftools.load(join(path, 'results.h5'))
         print('Load results and events from \'{}\''.format(path))
 
     @property

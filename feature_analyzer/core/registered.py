@@ -15,6 +15,7 @@ from feature_analyzer.evaluations.ranking_evaluation import RankingEvaluation
 from feature_analyzer.evaluations.facenet_evaluation import FacenetEvaluation
 from feature_analyzer.evaluations.classification_evaluation import ClassificationEvaluation
 from feature_analyzer.evaluations.geometric_evaluation import GeometricEvaluation
+from feature_analyzer.evaluations.variance_evaluation import VarianceEvaluation
 
 # ===========  Index Agents =============
 from feature_analyzer.index.hnsw_agent import HNSWAgent
@@ -33,6 +34,7 @@ REGISTERED_EVALUATION_OBJECTS = {
     eval_fields.facenet: FacenetEvaluation,
     eval_fields.classification: ClassificationEvaluation,
     eval_fields.geometric: GeometricEvaluation,
+    eval_fields.variance: VarianceEvaluation,
 }
 
 EVALUATION_DISPLAY_NAMES = {
@@ -40,6 +42,7 @@ EVALUATION_DISPLAY_NAMES = {
     eval_fields.facenet: 'pair',
     eval_fields.classification: 'cls',
     eval_fields.geometric: 'geo',
+    eval_fields.variance: 'var',
 }
 
 

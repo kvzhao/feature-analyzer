@@ -28,6 +28,8 @@ class EvaluationStandardFields:
     classification = 'ClassificationEvaluation'
     geometric = 'GeometricEvaluation'
 
+    variance = 'VarianceEvaluation'
+
     # ===== Inner items =====
     sampling = 'sampling'
     metric = 'metric'

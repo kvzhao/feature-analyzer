@@ -33,6 +33,10 @@ class RankingMetrics(MetricBase):
     def top_k(self):
         return self._top_k
 
+    def set_top_k(self, k):
+        self._top_k = k
+        self.clear()
+
     @property
     def top1_hit_accuracy(self):
         return np.mean(self._hit_arrays[:, 0])
@@ -82,7 +86,7 @@ class RankingMetrics(MetricBase):
             # 1. it can be aggregated to mAP unlike NaN/None.
             # 2. if it results in 0 mAP, we can still know something wrong with the model
             # 3. it's reasonable to assign 0 mAP to total failure since total success get 1 mAP
-            indices = np.where(hit_arr == 1)[0]
+            indices = np.where(hit_arr)[0]
             average_precision = 0.
             n_pos = len(indices)
             if n_pos > 0:
