@@ -28,31 +28,45 @@ def variance_analyzer(container, results):
     num_events = len(events)
 
     label_ids = list(map(int, events.label_id.unique()))
-    num_identities = len(label_ids)
+    num_classes = len(label_ids)
     num_instance_for_label_id = {
         label_id: len(container.get_instance_ids_by_label(label_id)) for label_id in label_ids
     }
 
-    margin_events = events[events.margin >= 0]
-    no_margin_events = events[events.margin < 0]
+    # Type I
+    margin_events = events[events.margin > 0]
+    # Type II
+    no_margin_events = events[events.margin <= 0]
 
-    num_typeI_events = len(margin_events)
-    num_typeII_events = len(no_margin_events)
 
-    print('[instance] TypeI : {}, TypeII: {}'.format(num_typeI_events / num_events, num_typeII_events / num_events))
-
-    tpyeI_identities = []
-    tpyeII_identities = []
+    margin_label_ids = []
+    not_all_margin_label_ids = []
     for label_id in label_ids:
         num_margin_event = len(margin_events[margin_events.label_id == label_id])
         if num_margin_event == num_instance_for_label_id[label_id]:
-            tpyeI_identities.append(label_id)
+            margin_label_ids.append(label_id)
         else:
             # TODO: different levels
-            tpyeII_identities.append(label_id)
-    num_tpyeI_identities = len(tpyeI_identities)
-    num_tpyeII_identities = len(tpyeII_identities)
-    print('[indentity] TypeI : {}, TypeII: {}'.format(num_tpyeI_identities/ num_identities, num_tpyeII_identities/ num_identities))
+            not_all_margin_label_ids.append(label_id)
+
+    pure_margin_event = margin_events[margin_events.label_id.isin(margin_label_ids)]
+    not_pure_margin_event = margin_events[~margin_events.label_id.isin(margin_label_ids)]
+
+    ref_threshold = 1.45
+    near_recog_margin_event = margin_events[margin_events.last_pos_sim < ref_threshold]
+
+
+    num_margin_events = len(margin_events)
+    num_no_margin_events = len(no_margin_events)
+    num_margin_classes = len(margin_label_ids)
+    num_no_margin_classes = len(not_all_margin_label_ids)
+
+
+    print('[instance] TypeI : {}, TypeII: {}'.format(num_margin_events / num_events, num_no_margin_events / num_events))
+    print('[class] TypeI : {}, TypeII: {}'.format(num_margin_classes/ num_classes, num_no_margin_classes/ num_classes))
+
+    print('Pure events: {}'.format(len(pure_margin_event) / len(events)))
+    print('Near boundary events: {}'.format(len(near_recog_margin_event) / len(margin_events)))
 
 
 
