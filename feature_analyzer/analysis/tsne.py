@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..')))
 
+import random
 import numpy as np
 
 from cycler import cycler
@@ -51,7 +52,12 @@ class TSNE(object):
           Return:
             result: 2D Numpy array with shape (N, 2)
         """
-        ids = self._container.instance_ids
+        label_ids = list(set(self._container.label_ids))
+
+        if len(label_ids) > 100:
+            ids = self._container.get_instance_ids_by_label_ids(random.sample(label_ids, 100))
+        else:
+            ids = self._container.instance_ids
         features = self._container.get_embedding_by_instance_ids(ids)
         label_ids = self._container.get_label_by_instance_ids(ids)
         label_names = self._container.get_label_name_by_instance_ids(ids)
