@@ -23,7 +23,6 @@ def variance_analyzer(container, results):
         report
     """
 
-    print(results.events)
     events = results.events
     num_events = len(events)
 
@@ -34,11 +33,17 @@ def variance_analyzer(container, results):
     }
 
     # Type I
-    margin_events = events[events.margin > 0]
+    # margin case;
+    # purity case;
+    margin_events = events[events.margin > 0.0]
+    purity_events = events[events.topk_purity == 1.0]
+    margin_not_pure_events = margin_events[margin_events.topk_purity < 1.0]
+
     # Type II
-    no_margin_events = events[events.margin <= 0]
+    no_margin_events = events[events.margin <= 0.0]
+    no_purity_events = events[events.topk_purity != 0.0]
 
-
+    # NOT SURE
     margin_label_ids = []
     not_all_margin_label_ids = []
     for label_id in label_ids:
@@ -55,19 +60,32 @@ def variance_analyzer(container, results):
     ref_threshold = 1.45
     near_recog_margin_event = margin_events[margin_events.last_pos_sim < ref_threshold]
 
+    print('[Type I] Margin events: {}'.format(len(margin_events) / len(events)))
+    print('[Type I] Purity events: {}'.format(len(purity_events) / len(events)))
+    print('[Type I] Margin with Nonpure TopK events: {}'.format(len(margin_not_pure_events) / len(events)))
+    print('[Type I] Margin class: {}, {}'.format(len(margin_label_ids), len(margin_label_ids) / len(label_ids)))
 
-    num_margin_events = len(margin_events)
-    num_no_margin_events = len(no_margin_events)
-    num_margin_classes = len(margin_label_ids)
-    num_no_margin_classes = len(not_all_margin_label_ids)
+    print('[Type I] Pure events: {}'.format(len(pure_margin_event) / len(events)))
+    print('[Type I] Near boundary events: {}'.format(len(near_recog_margin_event) / len(margin_events)))
 
 
-    print('[instance] TypeI : {}, TypeII: {}'.format(num_margin_events / num_events, num_no_margin_events / num_events))
-    print('[class] TypeI : {}, TypeII: {}'.format(num_margin_classes/ num_classes, num_no_margin_classes/ num_classes))
+    print('[Type II] No margin events: {}'.format(len(no_margin_events) / len(events)))
+    print('[Type II] No purity events: {}'.format(len(no_purity_events) / len(events)))
 
-    print('Pure events: {}'.format(len(pure_margin_event) / len(events)))
-    print('Near boundary events: {}'.format(len(near_recog_margin_event) / len(margin_events)))
+    ap_thres = 0.95
+    no_margin_low_ap = no_margin_events[no_margin_events.topk_ap < ap_thres]
+    no_purity_low_ap = no_purity_events[no_purity_events.topk_ap < ap_thres]
+    print('[Type II] No Margin Low topk AP (<{}): {}'.format(ap_thres, len(no_margin_low_ap) / len(events)))
+    print('[Type II] No Purity Low topk AP (<{}): {}'.format(ap_thres, len(no_purity_low_ap) / len(events)))
 
+    ap_thres = 0.99
+    no_margin_low_ap = no_margin_events[no_margin_events.topk_ap < ap_thres]
+    no_purity_low_ap = no_purity_events[no_purity_events.topk_ap < ap_thres]
+    print('[Type II] No Margin Low topk AP (<{}): {}'.format(ap_thres, len(no_margin_low_ap) / len(events)))
+    print('[Type II] No Purity Low topk AP (<{}): {}'.format(ap_thres, len(no_purity_low_ap) / len(events)))
+
+    print('[Type II]: No margin with topK AP = 1: {}'.format(len(no_margin_events[no_margin_events.topk_ap == 1])))
+    print('[Type II]: No purity with topK AP = 1: {}'.format(len(no_purity_events[no_purity_events.topk_ap == 1])))
 
 
 def main(args):
@@ -77,8 +95,15 @@ def main(args):
     result_container.load(args.result_container_path)
     embedding_container.load(args.embedding_container_path)
 
+
+    start = time.time()
+
     variance_analyzer(embedding_container, result_container)
 
+    end = time.time()
+    hours, rem = divmod(end-start, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds))
 
 if __name__ == '__main__':
     import argparse
