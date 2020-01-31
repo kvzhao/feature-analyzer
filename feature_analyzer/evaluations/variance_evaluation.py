@@ -12,6 +12,7 @@ from feature_analyzer.data_tools.result_container import ResultContainer
 from feature_analyzer.index.agent import IndexAgent
 
 
+# TODO: Move evaluation to analysis
 class VarianceEvaluation(MetricEvaluationBase):
 
     def __init__(self):
@@ -63,6 +64,7 @@ class VarianceEvaluation(MetricEvaluationBase):
             topk_purities = topk_hit_counts / num_topk
             topk_same_class_purity = np.mean(topk_purities)
 
+            """
             # center
             center_retrieved_indexes, center_similarities = agent.search(
                 class_center_embedding, top_k=num_top2k, is_similarity=True)
@@ -74,6 +76,7 @@ class VarianceEvaluation(MetricEvaluationBase):
             topk_center_hit_counts = np.sum(topk_center_hits, axis=1)
             topk_center_purities = topk_center_hit_counts / num_topk
             topk_center_same_class_purity = np.mean(topk_center_purities)
+            """
             
             
             # top 2k instance
@@ -97,7 +100,8 @@ class VarianceEvaluation(MetricEvaluationBase):
                 last_neg_sim = similarities[row, last_neg_id]
                 margin = last_pos_sim - first_neg_sim
 
-                topk_purity = topk_purities[row]
+                topk_purity = np.sum(hit_arr[:num_topk]) / num_topk
+                #topk_purity = topk_purities[row]
 
                 indices = np.where(hit_arr)[0]
                 n_pos = len(indices)
