@@ -40,6 +40,8 @@ class VarianceEvaluation(MetricEvaluationBase):
 
         label_ids = list(set(container.label_ids))
 
+        num_total_instance = len(all_embeddings)
+
         for label_id in label_ids:
 
             # Given class info
@@ -51,11 +53,26 @@ class VarianceEvaluation(MetricEvaluationBase):
             # instance
             num_topk = len(same_class_inst_ids)
             num_top2k = num_topk * 2
-            retrieved_indexes, similarities = agent.search(
-                same_class_embeddings, top_k=num_top2k, is_similarity=True)
-            retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
-            hits = retrieved_label_ids == np.asarray([label_id])
 
+            # TODO: Add a loop to search again
+            missed = True
+            trial = 1
+            search_length = num_top2k
+            while missed:
+                search_length = min((1 + trial) * num_topk, num_total_instance)
+                retrieved_indexes, similarities = agent.search(
+                    same_class_embeddings, top_k=search_length, is_similarity=True)
+                retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
+                hits = retrieved_label_ids == np.asarray([label_id])
+
+                num_pos_hits = np.sum(hits, axis=1)
+                has_missed_pos = num_pos_hits != num_topk
+                missed = np.any(has_missed_pos)
+                if missed:
+                    print('{} positives are not retrieved, try again {}'.format(np.sum(has_missed_pos) ,trial))
+                trial += 1
+
+            print('Done, trail: {}'.format(trial))
             # top k instance
             topk_hits = hits[:, :num_topk]
             #np.isin(retrieved_indexes[:, :num_inst_same_class], same_class_inst_ids)
@@ -63,6 +80,7 @@ class VarianceEvaluation(MetricEvaluationBase):
             topk_miss_counts = np.sum(~topk_hits, axis=1)
             topk_purities = topk_hit_counts / num_topk
             topk_same_class_purity = np.mean(topk_purities)
+
 
             """
             # center
@@ -77,7 +95,6 @@ class VarianceEvaluation(MetricEvaluationBase):
             topk_center_purities = topk_center_hit_counts / num_topk
             topk_center_same_class_purity = np.mean(topk_center_purities)
             """
-            
             
             # top 2k instance
             assert hits.shape == retrieved_label_ids.shape
