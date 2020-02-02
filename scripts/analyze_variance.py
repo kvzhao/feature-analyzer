@@ -24,10 +24,8 @@ def variance_analyzer(container, results):
     """
 
     events = results.events
-    num_events = len(events)
 
     label_ids = list(map(int, events.label_id.unique()))
-    num_classes = len(label_ids)
     num_instance_for_label_id = {
         label_id: len(container.get_instance_ids_by_label(label_id)) for label_id in label_ids
     }
@@ -38,7 +36,6 @@ def variance_analyzer(container, results):
     margin_events = events[events.margin > 0.0]
     purity_events = events[events.topk_purity == 1.0]
     margin_not_pure_events = margin_events[margin_events.topk_purity < 1.0]
-
     # Type II
     no_margin_events = events[events.margin <= 0.0]
     no_purity_events = events[events.topk_purity != 0.0]
@@ -68,7 +65,6 @@ def variance_analyzer(container, results):
     print('[Type I] Pure events: {}'.format(len(pure_margin_event) / len(events)))
     print('[Type I] Near boundary events: {}'.format(len(near_recog_margin_event) / len(margin_events)))
 
-
     print('[Type II] No margin events: {}'.format(len(no_margin_events) / len(events)))
     print('[Type II] No purity events: {}'.format(len(no_purity_events) / len(events)))
 
@@ -95,15 +91,15 @@ def main(args):
     result_container.load(args.result_container_path)
     embedding_container.load(args.embedding_container_path)
 
-
     start = time.time()
 
     variance_analyzer(embedding_container, result_container)
 
     end = time.time()
-    hours, rem = divmod(end-start, 3600)
+    hours, rem = divmod(end - start, 3600)
     minutes, seconds = divmod(rem, 60)
-    print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds))
+    print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
+
 
 if __name__ == '__main__':
     import argparse

@@ -16,11 +16,11 @@ from feature_analyzer.evaluations.variance_evaluation import VarianceEvaluation
 
 def main(args):
 
-    if args.data_dir is None:
+    if args.embedding_container_path is None:
         return
 
     container = EmbeddingContainer()
-    container.load(args.data_dir)
+    container.load(args.embedding_container_path)
 
     print(container)
 
@@ -50,21 +50,17 @@ def main(args):
     res = var_eval.compute(container)
 
     end = time.time()
-    hours, rem = divmod(end-start, 3600)
+    hours, rem = divmod(end - start, 3600)
     minutes, seconds = divmod(rem, 60)
-    print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours),int(minutes),seconds))
-
-    print(res.events)
-
-    res.save(args.output_dir)
-
+    print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
+    res.save(args.result_container_path)
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--data_dir', type=str, default=None)
-    parser.add_argument('-o', '--output_dir', type=str, default='variance_eval_results')
+    parser.add_argument('-ec', '--embedding_container_path', type=str, default=None)
+    parser.add_argument('-rc', '--result_container_path', type=str, default='variance_eval_results')
     parser.add_argument('-m', '--meta_data_path', type=str, default='/home/kv_zhao/nist-e2e/datasets/meta.h5')
     parser.add_argument('-es', '--embedding_size', type=int, default=1024)
     args = parser.parse_args()
