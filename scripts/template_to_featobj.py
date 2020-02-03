@@ -74,6 +74,7 @@ def unpack_template(bin_file_path, es=1024):
 
 
 def main(args):
+    # TODO: Check correctness CAREFULLY
 
     embedding_size = args.embedding_size
     template_files = get_binary_files(args.template_folder)
@@ -139,22 +140,23 @@ def main(args):
 
     print(container)
 
-    container.save(args.output_dir)
+    container.save(args.embedding_container_folder)
 
     inst2path_df = pd.DataFrame.from_dict(instance_id_to_path, orient='index')
-    dftools.save(inst2path_df, join(args.output_dir, 'inst2path.h5'))
+    dftools.save(inst2path_df, join(args.embedding_container_folder, 'inst2path.h5'))
     print('Save instance to path table.')
 
     label2folder_df = pd.DataFrame.from_dict(label_id_to_folder_name, orient='index')
-    dftools.save(label2folder_df, join(args.output_dir, 'label2folder.h5'))
+    dftools.save(label2folder_df, join(args.embedding_container_folder, 'label2folder.h5'))
     print('Save label to folder table.')
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--template_folder', type=str, default=None)
-    parser.add_argument('-o', '--output_dir', type=str, default='feature-examples/featobj_deepglint_D40kv2_RMG_v1_v1')
+    parser.add_argument('-td', '--template_folder', type=str, default=None)
+    parser.add_argument('-ec', '--embedding_container_folder', type=str,
+        default='feature-examples/featobj_deepglint_D40kv2_RMG_v1_v1')
     parser.add_argument('-m', '--meta_data_path', type=str, default='/home/kv_zhao/nist-e2e/datasets/meta.h5')
     parser.add_argument('-es', '--embedding_size', type=int, default=1024)
     args = parser.parse_args()
