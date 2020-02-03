@@ -67,7 +67,6 @@ class VarianceEvaluation(MetricEvaluationBase):
                 if step > 0.2 * max_search_length:
                     step = max_search_length
                 search_length = min(step, max_search_length)
-                print(search_length)
                 retrieved_indexes, similarities = agent.search(
                     same_class_embeddings, top_k=search_length, is_similarity=True)
                 retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
@@ -77,7 +76,7 @@ class VarianceEvaluation(MetricEvaluationBase):
                 has_missed_pos = num_pos_hits != num_topk
                 missed = np.any(has_missed_pos)
                 if search_length == max_search_length:
-                    print('Cannot found within top {}, skip'.format(max_search_length))
+                    print('{} Cannot found within top {}, skip'.format(label_id, max_search_length))
                     missed = False
                 #if missed:
                 #    print('{} positives are not retrieved, try again {}'.format(np.sum(has_missed_pos), trial))
