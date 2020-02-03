@@ -33,11 +33,11 @@ def variance_analyzer(container, results):
     # Type I
     # margin case;
     # purity case;
-    margin_events = events[events.margin > 0.0]
+    margin_events = events[events.top2k_margin > 0.0]
     purity_events = events[events.topk_purity == 1.0]
     margin_not_pure_events = margin_events[margin_events.topk_purity < 1.0]
     # Type II
-    no_margin_events = events[events.margin <= 0.0]
+    no_margin_events = events[events.top2k_margin <= 0.0]
     no_purity_events = events[events.topk_purity != 0.0]
 
     # NOT SURE
