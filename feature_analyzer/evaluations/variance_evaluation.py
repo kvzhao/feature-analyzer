@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..')))
 
+from tqdm import tqdm
 import numpy as np
 
 from feature_analyzer.evaluations.evaluation_base import MetricEvaluationBase
@@ -46,7 +47,7 @@ class VarianceEvaluation(MetricEvaluationBase):
 
         num_total_instance = len(all_embeddings)
 
-        for label_id in label_ids:
+        for label_id in tqdm(label_ids):
 
             # Given class info
             same_class_inst_ids = container.get_instance_ids_by_label_ids(label_id)
@@ -56,12 +57,13 @@ class VarianceEvaluation(MetricEvaluationBase):
             num_topk = len(same_class_inst_ids)
             num_top2k = num_topk * 2
 
-            # TODO: Add a loop to search again
             missed = True
             trial = 1
+            trial_step = 100
             search_length = num_top2k
+            max_search_length = 2000
             while missed:
-                search_length = min((1 + trial) * num_topk, num_total_instance)
+                search_length = min((1 + trial) * num_topk, max_search_length)
                 retrieved_indexes, similarities = agent.search(
                     same_class_embeddings, top_k=search_length, is_similarity=True)
                 retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
@@ -70,6 +72,9 @@ class VarianceEvaluation(MetricEvaluationBase):
                 num_pos_hits = np.sum(hits, axis=1)
                 has_missed_pos = num_pos_hits != num_topk
                 missed = np.any(has_missed_pos)
+                if search_length == max_search_length:
+                    print('Cannot found within top {}, skip'.format(max_search_length))
+                    missed = False
                 #if missed:
                 #    print('{} positives are not retrieved, try again {}'.format(np.sum(has_missed_pos), trial))
                 trial += 1
