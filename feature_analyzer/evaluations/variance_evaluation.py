@@ -70,11 +70,11 @@ class VarianceEvaluation(MetricEvaluationBase):
                 num_pos_hits = np.sum(hits, axis=1)
                 has_missed_pos = num_pos_hits != num_topk
                 missed = np.any(has_missed_pos)
-                if missed:
-                    print('{} positives are not retrieved, try again {}'.format(np.sum(has_missed_pos), trial))
+                #if missed:
+                #    print('{} positives are not retrieved, try again {}'.format(np.sum(has_missed_pos), trial))
                 trial += 1
 
-            print('Done, trail: {}'.format(trial))
+            #print('Done, trail: {}'.format(trial))
             # top k instance
             # TODO: Add to overall
             # topk_hits = hits[:, :num_topk]
