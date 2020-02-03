@@ -94,16 +94,22 @@ class ResultContainer(object):
         os.makedirs(path, exist_ok=True)
         #self._results.to_pickle(os.path.join(path, 'results.pickle'))
         #self._event_buffer.to_pickle(os.path.join(path, 'events.pickle'))
-        dftools.save(self._event_buffer, join(path, 'events.h5'))
-        dftools.save(self._results, join(path, 'results.h5'))
+        if not self._event_buffer.empty:
+            dftools.save(self._event_buffer, join(path, 'events.h5'))
+        if not self._results.empty:
+            dftools.save(self._results, join(path, 'results.h5'))
         print('Save results and events into \'{}\''.format(path))
 
     def load(self, path):
         """load result and events from disk"""
         #self._results = pd.read_pickle(os.path.join(path, 'results.pickle'))
         #self._event_buffer = pd.read_pickle(os.path.join(path, 'events.pickle'))
-        self._event_buffer = dftools.load(join(path, 'events.h5'))
-        self._results = dftools.load(join(path, 'results.h5'))
+        event_path = join(path, 'events.h5')
+        result_path = join(path, 'results.h5')
+        if os.path.isfile(event_path):
+            self._event_buffer = dftools.load(event_path)
+        if os.path.isfile(result_path):
+            self._results = dftools.load(result_path)
         print('Load results and events from \'{}\''.format(path))
 
     @property
