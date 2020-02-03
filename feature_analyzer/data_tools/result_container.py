@@ -40,6 +40,7 @@ class EventContainer(object):
         self._event_buffer = dftools.load(path)
 
 
+# TODO: Give the `name` of the container
 class ResultContainer(object):
     """
       The evaluation result container handles the computation outcomes
