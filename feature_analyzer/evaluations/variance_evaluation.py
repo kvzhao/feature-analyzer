@@ -23,7 +23,7 @@ def _compute_ap(bool_arr):
 class VarianceEvaluation(MetricEvaluationBase):
 
     def __init__(self):
-        pass
+        self.result_container = ResultContainer()
 
     def compute(self, container):
         """
@@ -32,7 +32,7 @@ class VarianceEvaluation(MetricEvaluationBase):
           Return:
             result_container: ResultContainer
         """
-        self.result_container = ResultContainer()
+        self.result_container.clear()
         self._inter_intra_variance_measure(container, self.result_container)
         self.analyze(container)
         return self.result_container
@@ -219,5 +219,5 @@ class VarianceEvaluation(MetricEvaluationBase):
         print('[Type II] No Margin Low topk AP (<{}): {}'.format(ap_thres, len(no_margin_low_ap) / len(events)))
         print('[Type II] No Purity Low topk AP (<{}): {}'.format(ap_thres, len(no_purity_low_ap) / len(events)))
 
-        print('[Type II]: No margin with topK AP = 1: {}'.format(len(no_margin_events[no_margin_events.topk_ap == 1])))
-        print('[Type II]: No purity with topK AP = 1: {}'.format(len(no_purity_events[no_purity_events.topk_ap == 1])))
+        print('[Type II]: No margin with topK AP=1: {}'.format(len(no_margin_events[no_margin_events.topk_ap == 1])))
+        print('[Type II]: No purity with topK AP=1: {}'.format(len(no_purity_events[no_purity_events.topk_ap == 1])))
