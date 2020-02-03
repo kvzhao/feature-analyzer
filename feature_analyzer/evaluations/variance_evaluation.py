@@ -59,11 +59,15 @@ class VarianceEvaluation(MetricEvaluationBase):
 
             missed = True
             trial = 1
-            trial_step = 100
+            trial_step = 2000
             search_length = num_top2k
-            max_search_length = 2000
+            max_search_length = int(0.9 * num_total_instance)
             while missed:
-                search_length = min((1 + trial) * num_topk, max_search_length)
+                step = (1 + trial) * num_topk if trial < 3 else (1 + trial) * trial_step
+                if step > 0.2 * max_search_length:
+                    step = max_search_length
+                search_length = min(step, max_search_length)
+                print(search_length)
                 retrieved_indexes, similarities = agent.search(
                     same_class_embeddings, top_k=search_length, is_similarity=True)
                 retrieved_label_ids = container.get_label_by_instance_ids(retrieved_indexes)
