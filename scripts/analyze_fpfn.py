@@ -11,7 +11,7 @@ from collections import Counter
 from feature_analyzer.data_tools.result_container import ResultContainer
 
 
-def _basic_statistics(events):
+def basic_statistics(events):
     """
       Measures:
         - #of Events
@@ -49,7 +49,7 @@ def _basic_statistics(events):
 
 
 def summarize_fp_events(fp_events):
-    table = _basic_statistics(fp_events)
+    table = basic_statistics(fp_events)
     print('[FP]')
     print(table)
 
@@ -62,7 +62,7 @@ def summarize_fp_events(fp_events):
 
 
 def summarize_fn_events(fn_events):
-    table = _basic_statistics(fn_events)
+    table = basic_statistics(fn_events)
     print('[FN]')
     print(table)
 
