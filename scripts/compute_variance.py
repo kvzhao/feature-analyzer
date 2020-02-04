@@ -47,13 +47,16 @@ def main(args):
 
     start = time.time()
 
-    res = var_eval.compute(container)
+    res = var_eval.compute(container, 
+        exhaustive_search=args.deep_search)
 
     end = time.time()
     hours, rem = divmod(end - start, 3600)
     minutes, seconds = divmod(rem, 60)
     print("{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
     res.save(args.result_container_path)
+
+    var_eval.analyze(container)
 
 
 if __name__ == '__main__':
@@ -63,5 +66,6 @@ if __name__ == '__main__':
     parser.add_argument('-rc', '--result_container_path', type=str, default='variance_eval_results')
     parser.add_argument('-m', '--meta_data_path', type=str, default='/home/kv_zhao/nist-e2e/datasets/meta.h5')
     parser.add_argument('-es', '--embedding_size', type=int, default=1024)
+    parser.add_argument('--deep_search', dest='deep_search', action='store_true')
     args = parser.parse_args()
     main(args)
