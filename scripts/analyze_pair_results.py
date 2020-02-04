@@ -19,6 +19,9 @@ def basic_statistics(events):
         - High freq. ID pair
         - High freq. instance
     """
+    rets = {}
+    print('#of total events: {}'.format(len(events)))
+
     event_pairs = events.event_pair.unique()
     id_pairs = events.id_pair.unique()
     total_ids = set(events.id_A) | set(events.id_B)
@@ -41,11 +44,18 @@ def basic_statistics(events):
         ],
         headers=['#of Events',
                  '#of ID Pairs',
-                 '#of High Freq. (>{}) ID Pairs'.format(id_pair_count_thres),
+                 '#of HFreq. (>{}) ID Pairs'.format(id_pair_count_thres),
                  'Events / ID Pairs',
                  '#of IDs',
                  ], tablefmt='orgtbl')
     return table
+
+
+def _print_id_pairs(id_pairs):
+    ids_str = ', '.join(
+        str(a) + '-' + str(b) for a, b in id_pairs
+    )
+    return ids_str
 
 
 def summarize_fp_events(fp_events):
@@ -53,11 +63,12 @@ def summarize_fp_events(fp_events):
     print('[FP]')
     print(table)
 
-    hard_fP_thres = 1.8
-    hard_fp_events = fp_events[fp_events.score > hard_fP_thres]
-    hard_fp_ids = hard_fp_events.id_pair.unique()
-    print(' - #of Hard (>{}) fp events: {}'.format(hard_fP_thres, len(hard_fp_events)))
-    print(' - #of Hard (>{}) fp IDs: {}'.format(hard_fP_thres, len(hard_fp_ids)))
+    for hard_fP_thres in [1.7, 1.8, 1.9]:
+        hard_fp_events = fp_events[fp_events.score > hard_fP_thres]
+        hard_fp_ids = hard_fp_events.id_pair.unique()
+        print(' - #of Hard (>{}) fp events: {}'.format(hard_fP_thres, len(hard_fp_events)))
+        print(' - #of Hard (>{}) fp IDs: {}'.format(hard_fP_thres, len(hard_fp_ids)))
+        print(_print_id_pairs(hard_fp_ids))
     # print(' - %Hard fp events: {}'.format(len(hard_fp_events) / len(fp_events)))
 
 
@@ -65,12 +76,21 @@ def summarize_fn_events(fn_events):
     table = basic_statistics(fn_events)
     print('[FN]')
     print(table)
+    for hard_fn_thres in [0.7, 0.8, 0.9]:
+        hard_fn_events = fn_events[fn_events.score < hard_fn_thres]
+        hard_fn_ids = hard_fn_events.id_pair.unique()
+        print(' - #of Hard (<{}) fn events: {}'.format(hard_fn_thres, len(hard_fn_events)))
+        print(' - #of Hard (<{}) fn IDs: {}'.format(hard_fn_thres, len(hard_fn_ids)))
+        ids_str = ', '.join(str(a) for a in hard_fn_ids)
+        print(ids_str)
 
-    hard_fn_thres = 0.9
-    hard_fn_events = fn_events[fn_events.score < hard_fn_thres]
-    hard_fn_ids = hard_fn_events.id_pair.unique()
-    print(' - #of Hard (<{}) fn events: {}'.format(hard_fn_thres, len(hard_fn_events)))
-    print(' - #of Hard (<{}) fn IDs: {}'.format(hard_fn_thres, len(hard_fn_ids)))
+    id_pair_counts = fn_events.id_pair.value_counts().to_dict()
+    #median_id_counts = np.median(list(id_pair_counts.values()))
+    id_pair_count_thres = np.mean(list(id_pair_counts.values()))
+    high_freq_id_pairs = [k for k, v in id_pair_counts.items() if v > id_pair_count_thres]
+    high_freq_fn_events = fn_events[fn_events.id_pair.isin(high_freq_id_pairs)]
+    print(high_freq_fn_events.id_pair.unique())
+
     # print(' - %Hard fn events: {}'.format(len(hard_fn_events) / len(fn_events)))
 
 
@@ -91,12 +111,15 @@ def main(args):
 
     summarize_fp_events(fp_events)
     summarize_fn_events(fn_events)
+    # TODO: Integrate data cleaning
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-rc', '--result_container_folder', type=str,
+        default=None)
+    parser.add_argument('-ec', '--embedding_container_folder', type=str,
         default=None)
     parser.add_argument('-m', '--meta_data_path', type=str,
         default='/home/kv_zhao/nist-e2e/datasets/meta.h5')
