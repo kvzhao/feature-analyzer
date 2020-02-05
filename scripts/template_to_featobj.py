@@ -112,9 +112,10 @@ def main(args):
         id_meta = meta_df[meta_df.folder_name == folder_name]
 
         label_name = folder_name
+        identity_name = folder_name
         source = ''
         if not id_meta.empty:
-            label_name = str(id_meta.Name.values[0])
+            identity_name = str(id_meta.Name.values[0])
             source = str(id_meta.source.values[0])
 
         for inst_name, content in ret.items():
@@ -131,6 +132,7 @@ def main(args):
                 label_name=label_name,
                 attribute={
                     'source': source,
+                    'identity_name': identity_name,
                 }
             )
             inst_id += 1
