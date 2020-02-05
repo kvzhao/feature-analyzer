@@ -419,6 +419,13 @@ class VarianceEvaluation(MetricEvaluationBase):
         print(' class mean purity: {}'.format(np.mean(purity_events.class_purity)))
         # _print_percentage(' classes', len(purity_events.label_id.unique()), len(events.label_id.unique()))
 
+        print(' mean topk purity: {}'.format(np.mean(purity_events.topk_purity)))
+        purity_thres = [0.99, 0.95, 0.8, .75, .5, .3]
+        for thres in purity_thres:
+            topk_purity_level_events = purity_events[purity_events.topk_purity < thres]
+            _print_percentage(' - topk purity < {} events'.format(thres),
+                len(topk_purity_level_events), len(events))
+
         print(' Events (Large intra-class variance)')
         for ap_thres in typeII_ap_thresholds:
             purity_low_ap = purity_events[purity_events.topk_ap < ap_thres]
