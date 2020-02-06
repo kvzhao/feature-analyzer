@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..')))
 
 from tqdm import tqdm
+import math
 import numpy as np
 
 from feature_analyzer.evaluations.evaluation_base import MetricEvaluationBase
@@ -25,7 +26,7 @@ def _print_percentage(leading_str, num_target, num_total):
         leading_str,
         num_target,
         num_total,
-        num_target / num_total
+        num_target / (num_total + 1e-8)
     ))
 
 # TODO: Move evaluation to analysis
@@ -69,6 +70,7 @@ class VarianceEvaluation(MetricEvaluationBase):
             num_top2k = num_topk * 2
 
             missed = True
+            out_of_time = False
             trial = 1
             trial_step = 2000
             search_length = num_top2k
@@ -90,6 +92,7 @@ class VarianceEvaluation(MetricEvaluationBase):
                 if search_length == max_search_length:
                     print('{} Cannot found within top {}, skip'.format(label_id, max_search_length))
                     missed = False
+                    out_of_time = True
                 if not exhaustive_search:
                     missed = False
                 #if missed:
@@ -133,6 +136,7 @@ class VarianceEvaluation(MetricEvaluationBase):
                     continue
                 last_neg_id = np.where(~hit_arr)[-1][-1]
                 last_pos_id = last_pos_id[-1]
+                # TODO: `out_of_time`, find out illegal instance id
                 # Three scales
                 # - topk
                 # - top2k
@@ -153,10 +157,13 @@ class VarianceEvaluation(MetricEvaluationBase):
                 margin = last_pos_sim - first_neg_sim
                 top2k_margin = top2k_last_pos_sim - top2k_first_neg_sim
 
-                topk_purity = np.sum(top2k_hit_arr[:num_topk + 1]) / (num_topk + 1)
+                topk_purity = np.sum(top2k_hit_arr[:num_topk]) / (num_topk)
+                #topk_purity = np.sum(top2k_hit_arr[:num_topk + 1]) / (num_topk + 1)
                 class_purity = np.sum(hit_arr[:last_pos_id + 1]) / (last_pos_id + 1)
+                #class_purity = np.sum(hit_arr[:last_pos_id + 1]) / (last_pos_id + 1)
 
-                topk_ap = _compute_ap(top2k_hit_arr[:num_topk + 1])
+                topk_ap = _compute_ap(top2k_hit_arr[:num_topk])
+                #topk_ap = _compute_ap(top2k_hit_arr[:num_topk + 1])
                 class_ap = _compute_ap(hit_arr[:last_pos_id + 1])
 
                 # extend region diversity
@@ -169,6 +176,7 @@ class VarianceEvaluation(MetricEvaluationBase):
                     'ret_ids': ret_id,
                     'ret_label_ids': ret_label_arr,
                     #'ret_label_ids': ret_label_arr[:num_top2k + 1],
+                    'num_topk': num_topk,
                     'first_sim': first_sim,
                     'last_pos_index': last_pos_id,
                     'last_pos_sim': last_pos_sim,
@@ -186,7 +194,7 @@ class VarianceEvaluation(MetricEvaluationBase):
                     'class_margin': margin,
                     'class_ap': class_ap,
                     'class_purity': class_purity,
-                    # 'extend_diversity': num_extend_diversity,
+                    'extend_diversity': num_extend_diversity,
                 })
 
     def analyze(self, container, output_path=None):
@@ -229,6 +237,13 @@ class VarianceEvaluation(MetricEvaluationBase):
         lids = container.get_label_by_instance_ids(inst_ids)
         lns = container.get_label_name_by_instance_ids(inst_ids)
         labelmap = {l: n for l, n in zip(lids, lns)}
+
+        print(' Overall Type I & Type II')
+        _print_percentage(' Type I by Margin', len(events[events.top2k_margin > 0.0]), len(events))
+        _print_percentage(' Type II by Margin', len(events[events.top2k_margin <= 0.0]), len(events))
+
+        _print_percentage(' Type I by Purity', len(events[events.topk_purity == 1.0]), len(events))
+        _print_percentage(' Type II by Purity', len(events[events.topk_purity != 1.0]), len(events))
 
         missed_events = events[events.class_ap != 1.0]
         _print_percentage('[Overall]: Out of search length events', len(missed_events), len(events))
@@ -283,7 +298,7 @@ class VarianceEvaluation(MetricEvaluationBase):
 
     def _typeI_summarization(self, events, container, output_path=None):
 
-        events['num_topk'] = events.apply(lambda x: len(x.ret_label_ids) // 2, axis=1)
+        #events['num_topk'] = events.apply(lambda x: len(x.ret_label_ids) // 2, axis=1)
         # type I by margin
         margin_events = events[events.top2k_margin > 0.0]
         class_margin_events = events[events.class_margin > 0.0]
@@ -310,6 +325,7 @@ class VarianceEvaluation(MetricEvaluationBase):
         print(' not pure classes: {}/{}'.format(
             len(margin_not_purity_events.label_id.unique()), len(events.label_id.unique())))
 
+        """
         outliers = margin_not_purity_events[
             margin_not_purity_events.last_pos_index > 2 * margin_not_purity_events.num_topk]
         outlier_ids = outliers.label_id.unique()
@@ -323,14 +339,15 @@ class VarianceEvaluation(MetricEvaluationBase):
         serious_outlier = margin_not_purity_events[
             margin_not_purity_events.last_pos_index > 10 * margin_not_purity_events.num_topk]
         serious_outlier_ids = serious_outlier.label_id.unique()
+        print(' #of serious outlier events: {}/{}'.format(len(serious_outlier), len(margin_not_purity_events)))
+        print(' #of serious outlier classes: {}/{}'.format(
+            len(serious_outlier.label_id.unique()), len(margin_not_purity_events.label_id.unique())))
+        """
 
         inst_ids = container.instance_ids
         lids = container.get_label_by_instance_ids(inst_ids)
         lns = container.get_label_name_by_instance_ids(inst_ids)
         labelmap = {l: n for l, n in zip(lids, lns)}
-        print(' #of serious outlier events: {}/{}'.format(len(serious_outlier), len(margin_not_purity_events)))
-        print(' #of serious outlier classes: {}/{}'.format(
-            len(serious_outlier.label_id.unique()), len(margin_not_purity_events.label_id.unique())))
         # print names
         #serious_outlier_name_str = ', '.join(labelmap.get(_id, '') for _id in serious_outlier_ids)
         #print(serious_outlier_name_str)
@@ -342,7 +359,8 @@ class VarianceEvaluation(MetricEvaluationBase):
         print(' class mAP: {}'.format(np.mean(purity_events.class_ap)))
         print(' class mean purity: {}'.format(np.mean(purity_events.class_purity)))
         print(' mean top2k margin: {}'.format(np.mean(purity_events.top2k_margin)))
-        print(' mean class margin: {}'.format(np.mean(purity_events.class_margin)))
+        print(' min, max top2k margin: {}, {}'.format(np.min(purity_events.top2k_margin),
+            np.max(purity_events.top2k_margin)))
 
         if 'first_sim' in events:
             sim_thres = [1.6, 1.5, 1.45, 1.4]
@@ -352,24 +370,19 @@ class VarianceEvaluation(MetricEvaluationBase):
                 _print_percentage(' - similarity < {} events'.format(thres),
                 len(outlier_query_event), len(events))
 
-        if 'top2k_last_pos_sim' in events:
-            sim_thres = [1.5, 1.45, 1.4, 1.3, 0.9]
-            print(' Top 2k Last Positive')
-            for thres in sim_thres:
-                outlier_pos_event = purity_events[purity_events.top2k_last_pos_sim < thres]
-                _print_percentage(' - similarity < {} events'.format(thres),
-                len(outlier_pos_event), len(events))
-
         if 'last_pos_sim' in events:
-            sim_thres = [1.5, 1.45, 1.4, 1.3, 0.9, 0.5]
+            """
             print(' Last Positive')
             for thres in sim_thres:
                 outlier_pos_event = purity_events[purity_events.last_pos_sim < thres]
                 _print_percentage(' - similarity < {} events'.format(thres),
                 len(outlier_pos_event), len(events))
+            """
+            sim_thres = [1.5, 1.45, 1.4, 1.3, 0.9, 0.5]
 
+            print(' Foundation (last positive sim >= 1.5)')
             foundation_events = purity_events[purity_events.last_pos_sim >= 1.5]
-            _print_percentage(' - foundation events', len(foundation_events), len(events))
+            _print_percentage(' - foundation events', len(foundation_events), len(purity_events))
             foundation_classes = []
             label_ids = list(map(int, foundation_events.label_id.unique()))
             num_instance_for_label_id = {
@@ -379,14 +392,33 @@ class VarianceEvaluation(MetricEvaluationBase):
                 if num_margin_event == num_instance_for_label_id[label_id]:
                     foundation_classes.append(label_id)
             _print_percentage(' - foundation classes', len(foundation_classes), len(events.label_id.unique()))
-        
+            _print_percentage(' - foundation class in events',
+                len(foundation_events[foundation_events.label_id.isin(foundation_classes)]), len(foundation_events))
 
+            rest_purity_events = purity_events[purity_events.last_pos_sim < 1.5]
+
+            print(' Rest Purity Events (last positive sim < 1.5)')
+            _print_percentage(' - rest events', len(rest_purity_events), len(purity_events))
+            sim_ranges = [(1.5, 1.45), (1.45, 1.4), (1.4, 1.3), (1.3, 0.9)]
+            for r in sim_ranges:
+                sim_in_between= rest_purity_events[rest_purity_events.last_pos_sim.between(r[1], r[0])]
+                print(' - similarity in [{}, {}] = {}/{} ({})'.format(r[0], r[1],
+                    len(sim_in_between), len(rest_purity_events), len(sim_in_between) / (len(rest_purity_events) + 1e-8)))
+                #outlier_pos_event = rest_purity_events[rest_purity_events.last_pos_sim < thres]
+                #_print_percentage(' - similarity < {} events'.format(thres),
+                #    len(outlier_pos_event), len(rest_purity_events))
+        
     def _typeII_summarization(self, events, container, output_path=None):
 
         #inst_ids = container.instance_ids
         #lids = container.get_label_by_instance_ids(inst_ids)
         #lns = container.get_label_name_by_instance_ids(inst_ids)
         #labelmap = {l: n for l, n in zip(lids, lns)}
+        """
+            - Top k purity
+            - Top k AP
+            - Out of top 2k
+        """
 
         # Type II by margin
         margin_events = events[events.top2k_margin <= 0.0]
@@ -395,6 +427,7 @@ class VarianceEvaluation(MetricEvaluationBase):
 
         typeII_ap_thresholds = [0.99, 0.95, 0.9, 0.85, 0.8, 0.5]
 
+        """
         print('[By Margin]')
         _print_percentage(' events', len(margin_events), len(events))
         # _print_percentage(' classes', len(margin_events.label_id.unique()), len(events.label_id.unique()))
@@ -411,21 +444,86 @@ class VarianceEvaluation(MetricEvaluationBase):
         for ap_thres in typeII_ap_thresholds:
             margin_low_ap = margin_events[margin_events.topk_ap < ap_thres]
             print(' - topk AP < {} classes: {}'.format(ap_thres, len(margin_low_ap.label_id.unique())))
+        """
 
         print('[By Purity]')
         _print_percentage(' events', len(purity_events), len(events))
         print(' topk mAP: {}'.format(np.mean(purity_events.topk_ap)))
         print(' class mAP: {}'.format(np.mean(purity_events.class_ap)))
         print(' class mean purity: {}'.format(np.mean(purity_events.class_purity)))
-        # _print_percentage(' classes', len(purity_events.label_id.unique()), len(events.label_id.unique()))
 
-        print(' mean topk purity: {}'.format(np.mean(purity_events.topk_purity)))
+        has_margin_events = purity_events[purity_events.top2k_margin > 0.0]
+        _print_percentage(' - Has margin events', len(has_margin_events), len(purity_events))
+
+        has_margin_outliers = has_margin_events[has_margin_events.last_pos_index > 2 * has_margin_events.num_topk]
+        _print_percentage('   - Outlier under margin events', len(has_margin_outliers), len(has_margin_events))
+        sim_ranges = [(1.5, 1.45), (1.45, 1.4), (1.4, 1.3), (1.3, 0.9)]
+        print('  Top 2k last positive')
+        for r in sim_ranges:
+            sim_in_between= has_margin_events[has_margin_events.top2k_last_pos_sim.between(r[1], r[0])]
+            print('     - similarity in [{}, {}] = {}/{} ({})'.format(r[0], r[1],
+                len(sim_in_between), len(has_margin_events), len(sim_in_between) / len(has_margin_events)))
+        print('  Last positive')
+        for r in sim_ranges:
+            sim_in_between= has_margin_events[has_margin_events.last_pos_sim.between(r[1], r[0])]
+            print('     - similarity in [{}, {}] = {}/{} ({})'.format(r[0], r[1],
+                len(sim_in_between), len(has_margin_events), len(sim_in_between) / len(has_margin_events)))
+
+
+        has_margin_foundation_events = has_margin_events[has_margin_events.top2k_last_pos_sim > 1.5]
+        _print_percentage(' - Has margin foundation events', len(has_margin_foundation_events), len(has_margin_events))
+
+        label_ids = list(map(int, has_margin_foundation_events.label_id.unique()))
+        # like sanity check
+        num_instance_for_label_id = {
+            label_id: len(container.get_instance_ids_by_label(label_id)) for label_id in label_ids}
+
+        # How many outliers
+        outlier_label_id = {_id: [] for _id in label_ids}
+        for _, event in has_margin_foundation_events.iterrows():
+            _id = event['label_id']
+            ret_label_ids = event['ret_label_ids']
+            num_topk = int(event['num_topk'])
+            num_topk_hits = np.sum(ret_label_ids[:num_topk] == _id)
+            num_top2k_hits = np.sum(ret_label_ids[:2 * num_topk] == _id)
+            outlier_label_id[_id].append(num_topk - num_top2k_hits)
+        #print(outlier_label_id)
+
+        no_margin_events = purity_events[purity_events.top2k_margin <= 0.0]
+        _print_percentage(' - No margin events', len(no_margin_events), len(purity_events))
+        no_margin_outliers = no_margin_events[no_margin_events.last_pos_index > 2 * no_margin_events.num_topk]
+        _print_percentage('   - Outlier under no margin events', len(no_margin_outliers), len(no_margin_events))
+
+        print(no_margin_events.ret_label_ids)
+        no_margin_events['topk_class_num'] = no_margin_events.apply(
+            lambda x: len(set(x.ret_label_ids[:int(x.num_topk)])), axis=1)
+
         purity_thres = [0.99, 0.95, 0.8, .75, .5, .3]
+        """
         for thres in purity_thres:
             topk_purity_level_events = purity_events[purity_events.topk_purity < thres]
             _print_percentage(' - topk purity < {} events'.format(thres),
                 len(topk_purity_level_events), len(events))
+        """
 
+        print(' Purity')
+        purity_ranges = [(1.0, 0.99), (0.99, .95), (0.95, 0.9), (0.9, 0.8), (0.8, 0.7), (0.7, 0.5)]
+        print(' mean topk purity: {}'.format(np.mean(purity_events.topk_purity)))
+        for r in purity_ranges:
+            in_between = purity_events[purity_events.topk_purity.between(r[1], r[0])]
+            if in_between.empty:
+                continue
+            print(' - purity in [{}, {}] = {}/{} ({})'.format(r[0], r[1],
+                    len(in_between), len(purity_events), len(in_between) / len(purity_events)))
+            _ap_thres = [(1, .995), (.995, .99), (.99, .9), (.9, .8), (.8, .5), (.5, .0)]
+            for ap in _ap_thres: #np.linspace(max_ap, min_ap, 5):
+                ap_in_between = in_between[in_between.topk_ap.between(ap[1], ap[0])]
+                print('     - Topk AP in [{}, {}] = {}/{} ({})'.format(ap[0], ap[1],
+                        len(ap_in_between), len(in_between), len(ap_in_between) / (len(in_between) + 1e-8)))
+
+
+
+        """
         print(' Events (Large intra-class variance)')
         for ap_thres in typeII_ap_thresholds:
             purity_low_ap = purity_events[purity_events.topk_ap < ap_thres]
@@ -434,9 +532,14 @@ class VarianceEvaluation(MetricEvaluationBase):
         for ap_thres in typeII_ap_thresholds:
             purity_low_ap = purity_events[purity_events.topk_ap < ap_thres]
             print(' - topk AP < {} classes: {}'.format(ap_thres, len(purity_low_ap.label_id.unique())))
+        """
 
         # low_topk_purity_ids = purity_events[purity_events.topk_ap < ap_thres].label_id.unique()
         # name_str = ', '.join(labelmap.get(_id, '') for _id in low_topk_purity_ids)
         # print(name_str)
         #low_topk_ap_inst_ids =  list(purity_events[purity_events.topk_ap < ap_thres].instance_id)
         #print(container.get_filename_strings_by_instance_ids(low_topk_ap_inst_ids))
+
+    def _fpfn_summarization(self, events, container, output_path=None):
+        # frequently appear two 2k ids
+        pass
