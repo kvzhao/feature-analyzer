@@ -22,6 +22,8 @@ install_requires = [
     'sklearn',
     'pandas',
     'pytablewriter',
+    'tqdm',
+    'tables',
     'MulticoreTSNE',
 ]
 
