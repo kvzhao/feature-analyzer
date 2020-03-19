@@ -23,5 +23,5 @@ Source: [hnswlib](https://github.com/nmslib/hnswlib)
 
 ### Usage
 ```bash
- featureAnalyzer -c configs/eval_container_example.yaml -dd feature-examples/container_example/
+ featAnalyzer -c configs/eval_container_example.yaml -dd feature-examples/container_example/
 ```
