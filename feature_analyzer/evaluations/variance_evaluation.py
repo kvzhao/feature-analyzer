@@ -455,6 +455,9 @@ class VarianceEvaluation(MetricEvaluationBase):
         has_margin_events = purity_events[purity_events.top2k_margin > 0.0]
         _print_percentage(' - Has margin events', len(has_margin_events), len(purity_events))
 
+        if 'num_topk' not in has_margin_events:
+            has_margin_events['num_topk'] = has_margin_events.apply(lambda x: len(x.ret_label_ids) // 2, axis=1)
+
         has_margin_outliers = has_margin_events[has_margin_events.last_pos_index > 2 * has_margin_events.num_topk]
         _print_percentage('   - Outlier under margin events', len(has_margin_outliers), len(has_margin_events))
         sim_ranges = [(1.5, 1.45), (1.45, 1.4), (1.4, 1.3), (1.3, 0.9)]
@@ -491,10 +494,13 @@ class VarianceEvaluation(MetricEvaluationBase):
 
         no_margin_events = purity_events[purity_events.top2k_margin <= 0.0]
         _print_percentage(' - No margin events', len(no_margin_events), len(purity_events))
+        if 'num_topk' not in no_margin_events:
+            no_margin_events['num_topk'] = no_margin_events.apply(lambda x: len(x.ret_label_ids) // 2, axis=1)
+
         no_margin_outliers = no_margin_events[no_margin_events.last_pos_index > 2 * no_margin_events.num_topk]
         _print_percentage('   - Outlier under no margin events', len(no_margin_outliers), len(no_margin_events))
 
-        print(no_margin_events.ret_label_ids)
+        #print(no_margin_events.ret_label_ids)
         no_margin_events['topk_class_num'] = no_margin_events.apply(
             lambda x: len(set(x.ret_label_ids[:int(x.num_topk)])), axis=1)
 
