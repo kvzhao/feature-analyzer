@@ -62,6 +62,10 @@ class ResultContainer(object):
         # only show when off-line mode is used.
         self._event_buffer = pd.DataFrame()
 
+        self._tmp_dir = '.tmp'
+        self._split_events = False
+        self._split_event_ids = []
+
     def add(self, attribute, metric, value, condition=None):
         """Add one result
             * create dict if key does not exist
@@ -95,9 +99,27 @@ class ResultContainer(object):
         if not self._event_buffer.empty:
             self._event_buffer.to_pickle(join(path, 'events.pickle'))
             # dftools.save(self._event_buffer, join(path, 'events.h5'))
+        elif self._split_events:
+            tmp_dir = self._tmp_dir
+            # load all sequence back.
+            self._event_buffer = pd.DataFrame()
+            for _id in self._split_event_ids:
+                df = pd.read_pickle(join(tmp_dir, '{}.pickle'.format(_id)))
+                self._event_buffer = self._event_buffer.append(df, ignore_index=True)
+            print(self._event_buffer)
+            self._event_buffer.to_pickle(join(path, 'events.pickle'))
         if not self._results.empty:
             dftools.save(self._results, join(path, 'results.h5'))
         print('Save results and events into \'{}\''.format(path))
+
+
+    def save_event(self, id):
+        tmp_dir = self._tmp_dir
+        self._split_event_ids.append(id)
+        self._split_events = True
+        os.makedirs(tmp_dir, exist_ok=True)
+        self._event_buffer.to_pickle(
+            join(tmp_dir, '{}.pickle'.format(id)))
 
     def load(self, path):
         """load result and events from disk"""
@@ -116,6 +138,10 @@ class ResultContainer(object):
     @property
     def events(self):
         return self._event_buffer
+
+    def clear_event(self):
+        self._event_buffer.drop(
+            self._event_buffer.index, inplace=True)
 
     @events.setter
     def events(self, events):

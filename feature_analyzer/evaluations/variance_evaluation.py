@@ -170,7 +170,7 @@ class VarianceEvaluation(MetricEvaluationBase):
                 extend_label_ids = ret_label_arr[num_topk:num_top2k]
                 num_extend_diversity = len(set(extend_label_ids))
 
-                results.add_event(content={
+                instance_event = {
                     'instance_id': q_id,
                     'label_id': label_id,
                     'ret_ids': ret_id,
@@ -195,7 +195,12 @@ class VarianceEvaluation(MetricEvaluationBase):
                     'class_ap': class_ap,
                     'class_purity': class_purity,
                     'extend_diversity': num_extend_diversity,
-                })
+                }
+                results.add_event(content=instance_event)
+            #print(results.events)
+            # Save class events
+            results.save_event(label_id)
+            results.clear_event()
 
     def analyze(self, container, output_path=None):
         events = self.result_container.events
