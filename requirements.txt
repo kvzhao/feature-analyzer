@@ -4,3 +4,6 @@ scipy
 sklearn
 pytablewriter
 pandas
+tqdm
+tables
+MulticoreTSNE
