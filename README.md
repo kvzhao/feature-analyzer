@@ -23,5 +23,10 @@ Source: [hnswlib](https://github.com/nmslib/hnswlib)
 
 ### Usage
 ```bash
- featAnalyzer -c configs/eval_container_example.yaml -dd feature-examples/container_example/
+ featAnalyzer -c configs/default.yaml -dd sample-data/embedding_container_example/
+```
+
+Variance analysis example
+```bash
+python scripts/analyze_variance.py -ec sample-data/embedding_container_example/ -rc sample-data/variance_example/
 ```
