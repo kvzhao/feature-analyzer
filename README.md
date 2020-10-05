@@ -1,9 +1,11 @@
 # Feature Analyzer
 
-## Development Branch
+## Development Branch: Dynamic
 TODO
 - intra-class and inter-class analysis
 - cross model or cross temperal analysis
+- Analyze feature behaviour across difference checkpoints
+- Support online (training stage) evaluation
 
 ## Quick Start
 
