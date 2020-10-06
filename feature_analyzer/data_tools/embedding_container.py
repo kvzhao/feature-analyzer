@@ -15,6 +15,8 @@ sys.path.insert(0, os.path.abspath(
 
 import re
 import pickle
+import json
+import struct
 import numpy as np
 import pandas as pd
 
@@ -913,8 +915,12 @@ class EmbeddingContainer(object):
             raise ValueError('Given path:{} does not exist'.format(path))
 
         if os.path.isdir(path):
-            print('Load embedding container from feat_obj format')
-            self._load_featobj(path)
+            #TODO seperate featobj and template folder cases
+            # print('Load embedding container from feat_obj format')
+            # self._load_featobj(path)
+            print('Load embedding container from template folder')
+            self._load_template_dir(path)
+
         elif os.path.isfile(path):
             if not path.endswith('.pkl'):
                 raise ValueError('Given path:{} does not support'.format(path))
@@ -922,6 +928,117 @@ class EmbeddingContainer(object):
             self._load_pkl(path)
         else:
             raise ValueError('Given path:{} does not support'.format(path))
+
+    def _load_template_dir(self, path):
+        def _get_binary_files(path):
+            bin_files = []
+            for dir in os.listdir(path):
+                dir_path = os.path.join(path, dir)
+                if os.path.isdir(dir_path):
+                    for file_name in os.listdir(dir_path):
+                        if file_name.endswith('.bin'):
+                            bin_files.append(os.path.join(dir_path, file_name))
+            return bin_files
+        def _unpack_template(bin_file_path, es=1024):
+            """Unpack the file with the following format
+
+            - 1024 dim feature, float32
+            - 1 conf, float32
+            - 10 landmarks: [eyeLeft, eyeRight, noise, mouseLeft, mouseRight], float32
+            Args:
+                bin_file_path: string of full path
+            Return:
+                A dict of datum
+            Raise:
+                TODO ValueError: open failure
+            """
+            ret = {}
+            if not os.path.isfile(bin_file_path):
+                return ret
+
+            with open(os.path.join(os.path.dirname(bin_file_path), 'finish.json')) as fp:
+                content = json.load(fp)
+                filename_list = content.get('file_list', None)
+
+            if filename_list is None:
+                return ret
+
+            with open(bin_file_path, 'rb') as f:
+                binContent = f.read()
+                maxface_struct_fmt = '{}f'.format(str(es + 11))
+                maxface_struct_len = struct.calcsize(maxface_struct_fmt)
+                struct_unpack = struct.Struct(maxface_struct_fmt).unpack_from
+                folder_name = os.path.dirname(bin_file_path).split('/')[-1]
+
+                for i, file_path in enumerate(filename_list):
+                    data = struct_unpack(binContent[i * maxface_struct_len: (i + 1) * maxface_struct_len])
+                    feature = data[:es]
+                    conf = data[es]
+                    landmark = data[es + 1:]
+                    filename = os.path.basename(file_path)
+                    inst_name = os.path.join(folder_name, filename)
+                    ret[inst_name] = {
+                        'feature': np.asarray(feature, np.float32),
+                        'conf': conf,
+                        'landmark': np.asarray(landmark, np.float32),
+                    }
+            return ret
+
+        template_files = _get_binary_files(path)
+
+        _container_size = 0
+        for bfile in template_files:
+            with open(os.path.join(os.path.dirname(bfile), 'finish.json')) as fp:
+                content = json.load(fp)
+                filename_list = content.get('file_list', None)
+            if filename_list is None:
+                continue
+            _container_size += len(filename_list)
+
+        instance_id_to_path = {}
+        label_id_to_folder_name = {}
+        for _id, temp_file in enumerate(template_files):
+            folder_name = os.path.dirname(temp_file).split('/')[-1]
+            label_id_to_folder_name[_id] = folder_name
+        folder_name_to_label_id = {
+            v: k for k, v in label_id_to_folder_name.items()}
+
+        self._re_init(
+            container_size=_container_size,
+            embedding_size=self.embedding_size,
+            probability_size=1,
+            landmark_size=10,
+            name=self.name)
+
+        inst_id = 0
+        for temp_file in template_files:
+            folder_name = temp_file.split('/')[-2]
+            ret = _unpack_template(temp_file, self.embedding_size)
+            if not ret:
+                print('{} is empty, skip'.format(temp_file))
+            instance_id_to_path[inst_id] = temp_file
+            label_id = folder_name_to_label_id[folder_name]
+
+            label_name = folder_name
+            identity_name = folder_name
+
+            for inst_name, content in ret.items():
+                score = np.asarray([content['conf']], np.float32)
+                self.add(
+                    inst_id,
+                    label_id=label_id,
+                    embedding=content['feature'],
+                    landmark=content['landmark'],
+                    probability=score,
+                    filename=inst_name,
+                    label_name=label_name,
+                    attribute={
+                        'identity_name': identity_name,
+                    }
+                )
+                inst_id += 1
+
+        print('Container initialized.')
 
     def _load_featobj(self, path):
         """Load embedding from disk"""

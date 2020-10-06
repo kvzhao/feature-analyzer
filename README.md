@@ -7,6 +7,10 @@ TODO
 - Analyze feature behaviour across difference checkpoints
 - Support online (training stage) evaluation
 
+### functions
+- ~~embedding_container load from template folder~~
+- trace assigned identities
+
 ## Quick Start
 
 ### Installation
